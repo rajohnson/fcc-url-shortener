@@ -122,7 +122,7 @@ app.get('/api/shorturl/:id', function(req, res) {
     if(err) {
       res.json({ error: `invalid id ${short}` });
     } else {
-      res.json({original_url: full, short_url: short});
+      res.redirect(full);
     }
   });
 });
