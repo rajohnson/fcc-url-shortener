@@ -118,9 +118,7 @@ app.post('/api/shorturl', function(req, res) {
 
 app.get('/api/shorturl/:id', function(req, res) {
   const short = req.params.id;
-  console.log('fetching', short);
   getShort(short, (err, full) => {
-    console.log('cb: ', err, full)
     if(err) {
       res.json({ error: `invalid id ${short}` });
     } else {
