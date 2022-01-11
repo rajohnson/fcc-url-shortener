@@ -32,7 +32,6 @@ let Index = mongoose.model('Index', indexSchema);
 
 function nextIndex(handler) {
   Index.exists({}, (err, exists) => {
-    console.log('exists test')
     if(err) {
       console.log(err);
     }
@@ -64,11 +63,11 @@ const urlSchema = new mongoose.Schema({
   short: {type: Number, unique: true, required: true}
 });
 
-let Url = mongoose.model('Url', urlSchema);
+let UrlSet = mongoose.model('UrlSet', urlSchema);
 
 function getShort(short) {
   // return the full or null if it doesn't exist in db
-  Url.findOne({short: short}, (err, result) => {
+  UrlSet.findOne({short: short}, (err, result) => {
     if(err) {
       return console.error(err);
     }
@@ -76,14 +75,15 @@ function getShort(short) {
   })
 }
 
-function saveUrl(urlString) {
+function saveUrl(urlString, callback) {
   // save the url and return short it is saved under
-  const short = nextIndex();
-  const doc = new Url({full: urlString, short: short}, (err, res) => {
-    if(err) {
-      return console.error(err);
-    }
-    return short;
+  const short = nextIndex((index) => {
+    UrlSet.create({full: urlString, short: index}, (err, res) => {
+      if(err) {
+        return console.error(err);
+      }
+      callback(res.full, res.short);
+    });
   });
 }
 
@@ -102,28 +102,17 @@ app.post('/api/shorturl', function(req, res) {
         return res.json({ error: 'invalid url' });
       }
       if(addresses === undefined) {
-        return res.json({ error: 'invalid url' });
+        res.json({ error: 'invalid url' });
       } else {
         // address is good
-        console.log('good', addresses);
+        saveUrl(urlString, (full, short) => {
+          res.json({original_url: full, short_url: short});
+        });
       }
     });
   } else {
-    return res.json({ error: 'invalid url' });
+    res.json({ error: 'invalid url' });
   }
-
-  // nextIndex((index) => {
-  //   res.json({index: index, valid: 'todo'});
-  // });
-
-  // const urlValid = true; // todo
-  // if(!urlValid) {
-  //   res.json({ error: 'invalid url' });
-  // } else {
-  //   const full = req.body.url;
-  //   const short = saveUrl(full);
-  //   res.json({original_url: full, short_url: short});
-  // }
 });
 
 app.get('/api/shorturl/:id', function(req, res) {
