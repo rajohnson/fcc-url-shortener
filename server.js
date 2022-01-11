@@ -4,6 +4,8 @@ const cors = require('cors');
 const app = express();
 const mongoose = require('mongoose');
 var bodyParser = require('body-parser');
+const dns = require('dns');
+const {URL} = require('url');
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -53,7 +55,7 @@ function nextIndex(handler) {
         handler(result.index)
       });
     }
-  })
+  });
 }
 
 // full is the url provided. short is the short id number assigned.
@@ -87,9 +89,33 @@ function saveUrl(urlString) {
 
 // endpoint for shorturl
 app.post('/api/shorturl', function(req, res) {
-  const index = nextIndex((index) => {
-    res.json({index: index});
-  });
+  const urlString = req.body.url;
+  try {
+    var urlObject = new URL(urlString);
+  } catch(e) {
+    console.log('bad input: ', e);
+    return res.json({ error: 'invalid url' });
+  }
+  if(urlObject.protocol === 'http:' || urlObject.protocol === 'https:') {
+    dns.lookup(urlObject.host, (err, addresses) => {
+      if(err) {
+        return res.json({ error: 'invalid url' });
+      }
+      if(addresses === undefined) {
+        return res.json({ error: 'invalid url' });
+      } else {
+        // address is good
+        console.log('good', addresses);
+      }
+    });
+  } else {
+    return res.json({ error: 'invalid url' });
+  }
+
+  // nextIndex((index) => {
+  //   res.json({index: index, valid: 'todo'});
+  // });
+
   // const urlValid = true; // todo
   // if(!urlValid) {
   //   res.json({ error: 'invalid url' });
