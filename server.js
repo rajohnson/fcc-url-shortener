@@ -65,13 +65,14 @@ const urlSchema = new mongoose.Schema({
 
 let UrlSet = mongoose.model('UrlSet', urlSchema);
 
-function getShort(short) {
-  // return the full or null if it doesn't exist in db
+function getShort(short, callback) {
   UrlSet.findOne({short: short}, (err, result) => {
     if(err) {
-      return console.error(err);
+      return callback(err, null);
+    } else if(result === null) {
+      return callback(true, null);
     }
-    return result.full;
+    return callback(null, result.full);
   })
 }
 
@@ -116,13 +117,16 @@ app.post('/api/shorturl', function(req, res) {
 });
 
 app.get('/api/shorturl/:id', function(req, res) {
-  const full = getShort(req.params.id);
   const short = req.params.id;
-  if(full) {
-    res.json({original_url: full, short_url: short});
-  } else {
-    res.json({ error: `invalid id ${short}` });
-  }
+  console.log('fetching', short);
+  getShort(short, (err, full) => {
+    console.log('cb: ', err, full)
+    if(err) {
+      res.json({ error: `invalid id ${short}` });
+    } else {
+      res.json({original_url: full, short_url: short});
+    }
+  });
 });
 
 // listen
